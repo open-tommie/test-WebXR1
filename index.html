@@ -1,88 +1,39 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR WebXR Example with Transparent Background</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-      background-color: transparent;
-    }
+<html>
+  <head>
+    <title>WebXR AR Example</title>
+  </head>
+  <body>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.151.3/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.151.3/examples/js/webxr/ARButton.js"></script>
+    <script>
+      // シーン、カメラ、レンダラーのセットアップ
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.xr.enabled = true;
+      document.body.appendChild(renderer.domElement);
 
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-  <script>
-    let xrSession = null;
-    let xrReferenceSpace = null;
-    let xrViewerPose = null;
+      // ARボタンを追加
+      document.body.appendChild(ARButton.createButton(renderer));
 
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-    const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
-    
-    // WebXRセッションを開始する関数
-    async function startXR() {
-      if (navigator.xr) {
-        try {
-          xrSession = await navigator.xr.requestSession("immersive-ar", {
-            requiredFeatures: ["hit-test"],
-            optionalFeatures: ["local", "bounded-floor"]
-          });
+      // シーンにオブジェクトを追加（例えば、赤い立方体）
+      const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
 
-          // WebXRの背景を透明に設定
-          const xrLayer = new XRWebGLLayer(xrSession, gl, {
-            alpha: true, // 透明な背景を有効にする
-            antialias: true
-          });
-          xrSession.updateRenderState({ baseLayer: xrLayer });
-
-          // WebXRセッションの参照空間を設定
-          xrReferenceSpace = await xrSession.requestReferenceSpace("local");
-          
-          // 描画ループを開始
-          xrSession.requestAnimationFrame(onXRFrame);
-          
-          // ARセッションの終了
-          xrSession.addEventListener("end", () => {
-            xrSession = null;
-            console.log("AR session ended");
-          });
-        } catch (err) {
-          console.error("Error starting XR session", err);
-        }
+      // アニメーションループ
+      function animate() {
+        renderer.setAnimationLoop(() => {
+          cube.rotation.x += 0.01;
+          cube.rotation.y += 0.01;
+          renderer.render(scene, camera);
+        });
       }
-    }
-
-    // AR体験の描画処理
-    function onXRFrame(t, frame) {
-      const session = frame.session;
-      const pose = frame.getViewerPose(xrReferenceSpace);
-      if (pose) {
-        // ここで、ARオブジェクトやその他のエレメントを描画
-        gl.clearColor(0, 0, 0, 0); // 背景色を透明に設定
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        
-        // 追加の描画処理をここに書きます
-
-        session.requestAnimationFrame(onXRFrame);
-      }
-    }
-
-    // ページ読み込み時にARセッションを開始
-    window.addEventListener("load", startXR);
-  </script>
-</body>
+      
+      animate();
+    </script>
+  </body>
 </html>
