@@ -1,3 +1,3 @@
 # test-WebXR1
 
-[サンプル１](./index.html)
+[サンプル１](index.html)
