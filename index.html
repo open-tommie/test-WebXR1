@@ -1,14 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR WebXR Example with Transparent Background</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background-color: transparent;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
-    <a-scene>
-        <!-- VR空間に立方体を配置 -->
-        <a-box position="0 1 -5" rotation="0 45 0" color="#4CC3D9"></a-box>
-        <!-- カメラ（ユーザーの視点） -->
-        <a-camera></a-camera>
-    </a-scene>
+  <script>
+    let xrSession = null;
+    let xrReferenceSpace = null;
+    let xrViewerPose = null;
+
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+    const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
+    
+    // WebXRセッションを開始する関数
+    async function startXR() {
+      if (navigator.xr) {
+        try {
+          xrSession = await navigator.xr.requestSession("immersive-ar", {
+            requiredFeatures: ["hit-test"],
+            optionalFeatures: ["local", "bounded-floor"]
+          });
+
+          // WebXRの背景を透明に設定
+          const xrLayer = new XRWebGLLayer(xrSession, gl, {
+            alpha: true, // 透明な背景を有効にする
+            antialias: true
+          });
+          xrSession.updateRenderState({ baseLayer: xrLayer });
+
+          // WebXRセッションの参照空間を設定
+          xrReferenceSpace = await xrSession.requestReferenceSpace("local");
+          
+          // 描画ループを開始
+          xrSession.requestAnimationFrame(onXRFrame);
+          
+          // ARセッションの終了
+          xrSession.addEventListener("end", () => {
+            xrSession = null;
+            console.log("AR session ended");
+          });
+        } catch (err) {
+          console.error("Error starting XR session", err);
+        }
+      }
+    }
+
+    // AR体験の描画処理
+    function onXRFrame(t, frame) {
+      const session = frame.session;
+      const pose = frame.getViewerPose(xrReferenceSpace);
+      if (pose) {
+        // ここで、ARオブジェクトやその他のエレメントを描画
+        gl.clearColor(0, 0, 0, 0); // 背景色を透明に設定
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        
+        // 追加の描画処理をここに書きます
+
+        session.requestAnimationFrame(onXRFrame);
+      }
+    }
+
+    // ページ読み込み時にARセッションを開始
+    window.addEventListener("load", startXR);
+  </script>
 </body>
 </html>
